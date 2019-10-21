@@ -1,4 +1,6 @@
 import time
+import typing as t
+
 import RPi.GPIO as GPIO
 
 from enum import Enum
@@ -90,7 +92,7 @@ class RgbLED:
         for led in self.all:
             led.pwm.stop()
 
-    def phase_colour_change(self, new_colour: Colour):
+    def single_led_phase_colour_change(self, new_colour: Colour):
         red_done = False
         green_done = False
         blue_done = False
@@ -102,6 +104,32 @@ class RgbLED:
 
             print(self.colour_value)
             time.sleep(0.01)
+
+    @staticmethod
+    def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour):
+        all_red_done = False
+        all_green_done = False
+        all_blue_done = False
+
+        led_done_statuses = {}
+        for led in all_rgb_leds:
+            led_done_statuses[id(led)] = {
+                'red_done': False,
+                'blue_done': False,
+                'green_done': False
+            }
+
+        while not all([all_red_done, all_green_done, all_blue_done]):
+            for led in all_rgb_leds:
+                led_done_statuses[id(led)]['red_done'] = led.red.increment_brightness(new_colour.value[0])
+                led_done_statuses[id(led)]['green_done'] = led.green.increment_brightness(new_colour.value[1])
+                led_done_statuses[id(led)]['blue_done'] = led.blue.increment_brightness(new_colour.value[2])
+
+                all_red_done = all([led_done_statuses[led_id]['red_done'] for led_id in led_done_statuses])
+                all_green_done = all([led_done_statuses[led_id]['green_done'] for led_id in led_done_statuses])
+                all_blue_done = all([led_done_statuses[led_id]['blue_done'] for led_id in led_done_statuses])
+                
+            time.sleep(0.05)
 
     def set_colour(self, new_colour: Colour):
         self.red.set_brightness(new_colour.value[0])
