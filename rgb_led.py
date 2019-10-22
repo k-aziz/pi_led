@@ -1,5 +1,6 @@
 import time
 import typing as t
+from collections import namedtuple
 
 import RPi.GPIO as GPIO
 
@@ -22,18 +23,20 @@ ALL_LED_PINS = (LED_PIN_1, LED_PIN_2, LED_PIN_3, LED_PIN_4, LED_PIN_5,
 LED_COUNT = 9
 
 
+RGB = namedtuple('RGB', 'red green blue')
+
 class Colour(Enum):
-    RED = (255, 0, 0)
-    GREEN = (0, 255, 0)
-    BLUE = (0, 0, 255)
+    RED = RGB(255, 0, 0)
+    GREEN = RGB(0, 255, 0)
+    BLUE = RGB(0, 0, 255)
 
-    YELLOW = (255, 255, 0)
-    CYAN = (0, 255, 255)
-    MAGENTA = (255, 0, 255)
+    YELLOW = RGB(255, 255, 0)
+    CYAN = RGB(0, 255, 255)
+    MAGENTA = RGB(255, 0, 255)
 
-    WHITE = (255, 255, 255)
-    PURPLE = (106, 0, 255)
-    ORANGE = (255, 45, 0)
+    WHITE = RGB(255, 255, 255)
+    PURPLE = RGB(106, 0, 255)
+    ORANGE = RGB(255, 45, 0)
 
 
 class LED:
@@ -73,7 +76,7 @@ class RgbLED:
         self.all = (self.red, self.green, self.blue)
     
     @property
-    def colour_value(self):
+    def colour_value(self) -> t.Tuple:
         return (
             self.red.colour_value,
             self.green.colour_value,
@@ -92,21 +95,21 @@ class RgbLED:
         for led in self.all:
             led.pwm.stop()
 
-    def single_led_phase_colour_change(self, new_colour: Colour):
+    def single_led_phase_colour_change(self, new_colour: Colour) -> None:
         red_done = False
         green_done = False
         blue_done = False
 
         while not all([red_done, green_done, blue_done]):
-            red_done = self.red.increment_brightness(new_colour.value[0])
-            green_done = self.green.increment_brightness(new_colour.value[1])
-            blue_done = self.blue.increment_brightness(new_colour.value[2])
+            red_done = self.red.increment_brightness(new_colour.value.red)
+            green_done = self.green.increment_brightness(new_colour.value.green)
+            blue_done = self.blue.increment_brightness(new_colour.value.blue)
 
             print(self.colour_value)
             time.sleep(0.01)
 
     @staticmethod
-    def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour):
+    def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour) -> None:
         all_red_done = False
         all_green_done = False
         all_blue_done = False
@@ -121,20 +124,20 @@ class RgbLED:
 
         while not all([all_red_done, all_green_done, all_blue_done]):
             for led in all_rgb_leds:
-                led_done_statuses[id(led)]['red_done'] = led.red.increment_brightness(new_colour.value[0])
-                led_done_statuses[id(led)]['green_done'] = led.green.increment_brightness(new_colour.value[1])
-                led_done_statuses[id(led)]['blue_done'] = led.blue.increment_brightness(new_colour.value[2])
+                led_done_statuses[id(led)]['red_done'] = led.red.increment_brightness(new_colour.value.red)
+                led_done_statuses[id(led)]['green_done'] = led.green.increment_brightness(new_colour.value.green)
+                led_done_statuses[id(led)]['blue_done'] = led.blue.increment_brightness(new_colour.value.blue)
 
                 all_red_done = all([led_done_statuses[led_id]['red_done'] for led_id in led_done_statuses])
                 all_green_done = all([led_done_statuses[led_id]['green_done'] for led_id in led_done_statuses])
                 all_blue_done = all([led_done_statuses[led_id]['blue_done'] for led_id in led_done_statuses])
-                
+
             time.sleep(0.05)
 
-    def set_colour(self, new_colour: Colour):
-        self.red.set_brightness(new_colour.value[0])
-        self.green.set_brightness(new_colour.value[1])
-        self.blue.set_brightness(new_colour.value[2])
+    def set_colour(self, new_colour: Colour) -> None:
+        self.red.set_brightness(new_colour.value.red)
+        self.green.set_brightness(new_colour.value.green)
+        self.blue.set_brightness(new_colour.value.blue)
 
 
 def run():
@@ -145,10 +148,11 @@ def run():
     rgb_led_2 = setup_rgb_led(LED_PIN_4, LED_PIN_5, LED_PIN_6)
     rgb_led_3 = setup_rgb_led(LED_PIN_7, LED_PIN_8, LED_PIN_9)
 
+    all_rgb_leds = [rgb_led_1, rgb_led_2, rgb_led_3]
+
     try:
-        rgb_led_1.start()
-        rgb_led_2.start()
-        rgb_led_3.start()
+        for led in all_rgb_leds:
+            led.start()
 
         while True:
             colour_cycle = (
@@ -172,7 +176,7 @@ def run():
     GPIO.cleanup()
 
 
-def setup_rgb_led(red_led_pin, green_led_pin, blue_led_pin):
+def setup_rgb_led(red_led_pin: int, green_led_pin: int, blue_led_pin: int) -> RgbLED:
     red = LED(red_led_pin, 255)
     green = LED(green_led_pin, 255)
     blue = LED(blue_led_pin, 255)
