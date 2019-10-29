@@ -1,29 +1,12 @@
 import time
 import typing as t
 from collections import namedtuple
+from enum import Enum
 
 import RPi.GPIO as GPIO
 
-from enum import Enum
-
-LED_PIN_1 = 12
-LED_PIN_2 = 11
-LED_PIN_3 = 13
-
-LED_PIN_4 = 15
-LED_PIN_5 = 16
-LED_PIN_6 = 18
-
-LED_PIN_7 = 29
-LED_PIN_8 = 31
-LED_PIN_9 = 32
-
-ALL_LED_PINS = (LED_PIN_1, LED_PIN_2, LED_PIN_3, LED_PIN_4, LED_PIN_5,
-                LED_PIN_6, LED_PIN_7, LED_PIN_8, LED_PIN_9)
-LED_COUNT = 9
-
-
 RGB = namedtuple('RGB', 'red green blue')
+
 
 class Colour(Enum):
     RED = RGB(255, 0, 0)
@@ -48,7 +31,7 @@ class LED:
 
     def set_brightness(self, colour_value):
         if colour_value < 0 or colour_value > 255:
-            raise ValueError("colour value must be a value from 0 to 255") 
+            raise ValueError("colour value must be a value from 0 to 255")
 
         brightness = round((100 / 255) * colour_value)
         # for common anode rgb the brightness must be inverted
@@ -74,7 +57,7 @@ class RgbLED:
         self.green = green
         self.blue = blue
         self.all = (self.red, self.green, self.blue)
-    
+
     @property
     def colour_value(self) -> t.Tuple:
         return (
@@ -83,10 +66,18 @@ class RgbLED:
             self.blue.colour_value
         )
 
+    @staticmethod
+    def setup(red_led_pin: int, green_led_pin: int, blue_led_pin: int) -> 'RgbLED':
+        red = LED(red_led_pin, 255)
+        green = LED(green_led_pin, 255)
+        blue = LED(blue_led_pin, 255)
+
+        return RgbLED(red=red, green=green, blue=blue)
+
     def start(self):
         for led in self.all:
             led.pwm.start(100)
-        
+
         self.red.set_brightness(255)
         self.green.set_brightness(255)
         self.blue.set_brightness(255)
@@ -109,7 +100,7 @@ class RgbLED:
             time.sleep(0.01)
 
     @staticmethod
-    def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour) -> None:
+    def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour, manager) -> None:
         all_red_done = False
         all_green_done = False
         all_blue_done = False
@@ -124,6 +115,8 @@ class RgbLED:
 
         while not all([all_red_done, all_green_done, all_blue_done]):
             for led in all_rgb_leds:
+                if manager.interrupted:
+                    return
                 led_done_statuses[id(led)]['red_done'] = led.red.increment_brightness(new_colour.value.red)
                 led_done_statuses[id(led)]['green_done'] = led.green.increment_brightness(new_colour.value.green)
                 led_done_statuses[id(led)]['blue_done'] = led.blue.increment_brightness(new_colour.value.blue)
@@ -138,51 +131,3 @@ class RgbLED:
         self.red.set_brightness(new_colour.value.red)
         self.green.set_brightness(new_colour.value.green)
         self.blue.set_brightness(new_colour.value.blue)
-
-
-def run():
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(ALL_LED_PINS, GPIO.OUT, initial=GPIO.HIGH)
-
-    rgb_led_1 = setup_rgb_led(LED_PIN_1, LED_PIN_2, LED_PIN_3)
-    rgb_led_2 = setup_rgb_led(LED_PIN_4, LED_PIN_5, LED_PIN_6)
-    rgb_led_3 = setup_rgb_led(LED_PIN_7, LED_PIN_8, LED_PIN_9)
-
-    all_rgb_leds = [rgb_led_1, rgb_led_2, rgb_led_3]
-
-    try:
-        for led in all_rgb_leds:
-            led.start()
-
-        while True:
-            colour_cycle = (
-                Colour.GREEN,
-                Colour.RED,
-                Colour.BLUE,
-            )
-            for colour in colour_cycle:
-                print(f'turning {colour}')
-                rgb_led_1.set_colour(colour)
-                rgb_led_2.set_colour(colour)
-                rgb_led_3.set_colour(colour)
-                print('complete')
-                time.sleep(2)
-
-    except KeyboardInterrupt:
-        rgb_led_1.stop()
-        rgb_led_2.stop()
-        rgb_led_3.stop()
-
-    GPIO.cleanup()
-
-
-def setup_rgb_led(red_led_pin: int, green_led_pin: int, blue_led_pin: int) -> RgbLED:
-    red = LED(red_led_pin, 255)
-    green = LED(green_led_pin, 255)
-    blue = LED(blue_led_pin, 255)
-
-    return RgbLED(red=red, green=green, blue=blue)
-
-
-if __name__ == "__main__":
-    run()
