@@ -42,9 +42,10 @@ class ModeA(Mode):
             for led in self.leds:
                 led.set_colour(colour)
             print('complete')
-            if manager.interrupted:
-                return
-            time.sleep(2)
+            for interval in range(2, step=0.5):
+                if manager.interrupted:
+                    return
+                time.sleep(0.5)
 
 
 class ModeB(Mode):
@@ -55,6 +56,7 @@ class ModeB(Mode):
             print(f'turning {colour}')
             RgbLED.multi_led_phase_colour_change(self.leds, colour, manager)
             print('complete')
-            if manager.interrupted:
-                return
-            time.sleep(2)
+            for interval in range(2, step=0.5):
+                if manager.interrupted:
+                    return
+                time.sleep(0.5)
