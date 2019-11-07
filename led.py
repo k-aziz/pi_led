@@ -31,7 +31,7 @@ class LED:
 
     def set_brightness(self, colour_value):
         if colour_value < 0 or colour_value > 255:
-            raise ValueError("colour value must be a value from 0 to 255")
+            raise ValueError("Colour value must be a value from 0 to 255")
 
         brightness = round((100 / 255) * colour_value)
         # for common anode rgb the brightness must be inverted

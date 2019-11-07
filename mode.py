@@ -22,13 +22,13 @@ class ModeManager:
         self.modes_cycle = modes_cycle
 
     def run(self):
-        print("running mode manager")
+        print("Running mode manager")
         while True:
             for mode in self.modes_cycle:
-                while True:    # Oh god why is there so many While True loops
+                while True:
                     if self.interrupted:
                         break
-                    # print(f"Starting {mode.__class__.__name__}")
+                    print(f"Starting {mode.__class__.__name__}")
                     mode.run(self)
                 self.interrupted = False
 
@@ -40,10 +40,10 @@ class ModeA(Mode):
                 return
             if index > 0:
                 time.sleep(2)
-            # print(f'turning {colour}')
+            print(f'turning {colour}')
             for led in self.leds:
                 led.set_colour(colour)
-            # print('complete')
+            print('complete')
 
 
 class ModeB(Mode):
@@ -53,6 +53,6 @@ class ModeB(Mode):
                 return
             if index > 0:
                 time.sleep(2)
-            # print(f'turning {colour}')
+            print(f'turning {colour}')
             RgbLED.multi_led_phase_colour_change(self.leds, colour, manager)
-            # print('complete')
+            print('complete')

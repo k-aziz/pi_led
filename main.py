@@ -1,3 +1,4 @@
+import subprocess
 import time
 
 import RPi.GPIO as GPIO
@@ -20,11 +21,9 @@ LED_PIN_7 = 29
 LED_PIN_8 = 31
 LED_PIN_9 = 32
 
-ALL_LED_PINS = (LED_PIN_1, LED_PIN_2, LED_PIN_3, LED_PIN_4, LED_PIN_5,
-                LED_PIN_6, LED_PIN_7, LED_PIN_8, LED_PIN_9)
-LED_COUNT = 9
-
-timer = 0
+ALL_LED_PINS = (LED_PIN_1, LED_PIN_2, LED_PIN_3,
+                LED_PIN_4, LED_PIN_5, LED_PIN_6,
+                LED_PIN_7, LED_PIN_8, LED_PIN_9)
 
 
 def start():
@@ -41,19 +40,20 @@ def start():
 
 
 def shutdown():
-    print("shutting down")
+    print("Shutting down...")
+    subprocess.run(['sudo', 'shutdown', '-h', 'now'])
 
 
 def edge_detected(pin):
-    if GPIO.input(pin):
-        shutdown_timer.cancel()
-        print("output")
-        mode_manager.interrupted = True
-    else:
+    if not GPIO.input(pin):
         shutdown_timer.start()
-        print("input")
+        print("Button down")
+    else:
+        shutdown_timer.cancel()
+        print("Button up")
+        mode_manager.interrupted = True
 
-    time.sleep(0.1)
+    time.sleep(0.2)
 
 
 if __name__ == "__main__":
