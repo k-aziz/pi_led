@@ -34,6 +34,7 @@ class LED:
             raise ValueError("Colour value must be a value from 0 to 255")
 
         brightness = round((100 / 255) * colour_value)
+        self.colour_value = colour_value
         # for common anode rgb the brightness must be inverted
         self.pwm.ChangeDutyCycle(100 - brightness)
 

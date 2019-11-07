@@ -38,12 +38,13 @@ class ModeA(Mode):
         for index, colour in enumerate(self.colour_cycle):
             if manager.interrupted:
                 return
-            if index > 0:
-                time.sleep(2)
             print(f'turning {colour}')
             for led in self.leds:
                 led.set_colour(colour)
             print('complete')
+            if manager.interrupted:
+                return
+            time.sleep(2)
 
 
 class ModeB(Mode):
@@ -51,8 +52,9 @@ class ModeB(Mode):
         for index, colour in enumerate(self.colour_cycle):
             if manager.interrupted:
                 return
-            if index > 0:
-                time.sleep(2)
             print(f'turning {colour}')
             RgbLED.multi_led_phase_colour_change(self.leds, colour, manager)
             print('complete')
+            if manager.interrupted:
+                return
+            time.sleep(2)
