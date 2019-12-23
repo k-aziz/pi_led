@@ -4,7 +4,7 @@ import time
 import RPi.GPIO as GPIO
 
 from led import Colour, RgbLED
-from mode import ModeManager, ModeA, ModeB
+from mode import ModeManager, ModeA, ModeB, SoftShutdown
 from timer import MyTimer
 
 BUTTON_PIN = 5
@@ -26,11 +26,36 @@ ALL_LED_PINS = (LED_PIN_1, LED_PIN_2, LED_PIN_3,
                 LED_PIN_7, LED_PIN_8, LED_PIN_9)
 
 
+def init():
+    global shutdown_timer
+    global mode_manager
+    global all_rgb_leds
+
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(ALL_LED_PINS, GPIO.OUT, initial=GPIO.HIGH)
+    GPIO.setup(BUTTON_PIN, GPIO.IN)
+    GPIO.add_event_detect(BUTTON_PIN, GPIO.BOTH, callback=btn_edge_detected, bouncetime=150)
+
+    rgb_led_1 = RgbLED.setup(LED_PIN_1, LED_PIN_2, LED_PIN_3)
+    rgb_led_2 = RgbLED.setup(LED_PIN_4, LED_PIN_5, LED_PIN_6)
+    rgb_led_3 = RgbLED.setup(LED_PIN_7, LED_PIN_8, LED_PIN_9)
+
+    all_rgb_leds = [rgb_led_1, rgb_led_2, rgb_led_3]
+
+    mode_a = ModeA(all_rgb_leds, colour_cycle=[Colour.RED, Colour.GREEN, Colour.BLUE])
+    mode_b = ModeB(all_rgb_leds, colour_cycle=[Colour.PURPLE, Colour.CYAN, Colour.MAGENTA])
+
+    shutdown_timer = MyTimer(3, soft_shutdown)
+    mode_manager = ModeManager([mode_b, mode_a], SoftShutdown(all_rgb_leds))
+
+
 def start():
     try:
         for led in all_rgb_leds:
             led.start()
-        mode_manager.run()
+        while True:
+            print("Running mode manager")
+            mode_manager.run()
     except KeyboardInterrupt:
         for led in all_rgb_leds:
             led.stop()
@@ -44,33 +69,28 @@ def shutdown():
     subprocess.run(['sudo', 'shutdown', '-h', 'now'])
 
 
-def edge_detected(pin):
-    if not GPIO.input(pin):
-        shutdown_timer.start()
-        print("Button down")
-    else:
-        shutdown_timer.cancel()
-        print("Button up")
-        mode_manager.interrupted = True
+def soft_shutdown():
+    mode_manager.soft_shutdown()
 
+
+def btn_edge_detected(pin):
+    if not GPIO.input(pin):
+        print("Button down")
+        shutdown_timer.start()
+        time.sleep(0.1)
+        if mode_manager.shutting_down:
+            mode_manager.interrupted = True
+    else:
+        print("Button up")
+        shutdown_timer.cancel()
+        if not mode_manager.shutting_down:
+            mode_manager.interrupted = True
     time.sleep(0.2)
 
 
 if __name__ == "__main__":
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(ALL_LED_PINS, GPIO.OUT, initial=GPIO.HIGH)
-    GPIO.setup(BUTTON_PIN, GPIO.IN)
-    GPIO.add_event_detect(BUTTON_PIN, GPIO.BOTH, callback=edge_detected, bouncetime=100)
-
-    rgb_led_1 = RgbLED.setup(LED_PIN_1, LED_PIN_2, LED_PIN_3)
-    rgb_led_2 = RgbLED.setup(LED_PIN_4, LED_PIN_5, LED_PIN_6)
-    rgb_led_3 = RgbLED.setup(LED_PIN_7, LED_PIN_8, LED_PIN_9)
-
-    all_rgb_leds = [rgb_led_1, rgb_led_2, rgb_led_3]
-
-    mode_a = ModeA(all_rgb_leds, colour_cycle=[Colour.RED, Colour.GREEN, Colour.BLUE])
-    mode_b = ModeB(all_rgb_leds, colour_cycle=[Colour.PURPLE, Colour.CYAN, Colour.MAGENTA])
-
-    shutdown_timer = MyTimer(3, shutdown)
-    mode_manager = ModeManager([mode_a, mode_b])
+    shutdown_timer = None
+    mode_manager = None
+    all_rgb_leds = []
+    init()
     start()

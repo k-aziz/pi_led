@@ -85,7 +85,7 @@ class RgbLED:
 
     def stop(self):
         for led in self.all:
-            led.pwm.stop()
+            led.set_brightness(0)
 
     def single_led_phase_colour_change(self, new_colour: Colour) -> None:
         red_done = False
@@ -97,7 +97,6 @@ class RgbLED:
             green_done = self.green.increment_brightness(new_colour.value.green)
             blue_done = self.blue.increment_brightness(new_colour.value.blue)
 
-            print(self.colour_value)
             time.sleep(0.01)
 
     @staticmethod
