@@ -18,6 +18,7 @@ class Colour(Enum):
     MAGENTA = RGB(255, 0, 255)
 
     WHITE = RGB(255, 255, 255)
+    BLACK = RGB(0, 0, 0)
     PURPLE = RGB(106, 0, 255)
     ORANGE = RGB(255, 45, 0)
 
@@ -79,10 +80,6 @@ class RgbLED:
         for led in self.all:
             led.pwm.start(100)
 
-        self.red.set_brightness(255)
-        self.green.set_brightness(255)
-        self.blue.set_brightness(255)
-
     def stop(self):
         for led in self.all:
             led.set_brightness(0)
@@ -100,7 +97,8 @@ class RgbLED:
             time.sleep(0.01)
 
     @staticmethod
-    def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour, manager) -> None:
+    def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour, manager: 'ModeManager',
+                                      interval: float = 0.05) -> None:
         all_red_done = False
         all_green_done = False
         all_blue_done = False
@@ -125,7 +123,7 @@ class RgbLED:
                 all_green_done = all([led_done_statuses[led_id]['green_done'] for led_id in led_done_statuses])
                 all_blue_done = all([led_done_statuses[led_id]['blue_done'] for led_id in led_done_statuses])
 
-            time.sleep(0.05)
+            time.sleep(interval)
 
     def set_colour(self, new_colour: Colour) -> None:
         self.red.set_brightness(new_colour.value.red)
