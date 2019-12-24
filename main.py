@@ -1,5 +1,6 @@
 import subprocess
 import time
+import typing as t
 
 import RPi.GPIO as GPIO
 
@@ -28,8 +29,6 @@ ALL_LED_PINS = (LED_PIN_1, LED_PIN_2, LED_PIN_3,
 
 def init():
     global shutdown_timer
-    global mode_manager
-    global all_rgb_leds
 
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(ALL_LED_PINS, GPIO.OUT, initial=GPIO.HIGH)
@@ -40,16 +39,18 @@ def init():
     rgb_led_2 = RgbLED.setup(LED_PIN_4, LED_PIN_5, LED_PIN_6)
     rgb_led_3 = RgbLED.setup(LED_PIN_7, LED_PIN_8, LED_PIN_9)
 
-    all_rgb_leds = [rgb_led_1, rgb_led_2, rgb_led_3]
+    all_leds = [rgb_led_1, rgb_led_2, rgb_led_3]
 
     mode_a = ModeA(all_rgb_leds, colour_cycle=[Colour.RED, Colour.GREEN, Colour.BLUE])
     mode_b = ModeB(all_rgb_leds, colour_cycle=[Colour.PURPLE, Colour.CYAN, Colour.MAGENTA])
 
     shutdown_timer = MyTimer(3, soft_shutdown)
-    mode_manager = ModeManager([mode_b, mode_a], SoftShutdown(all_rgb_leds))
+    manager = ModeManager([mode_b, mode_a], SoftShutdown(all_rgb_leds))
+
+    return manager, all_leds
 
 
-def start():
+def start(mode_manager: ModeManager, all_rgb_leds: t.List[RgbLED, ...]):
     try:
         for led in all_rgb_leds:
             led.start()
@@ -73,7 +74,7 @@ def soft_shutdown():
     mode_manager.soft_shutdown()
 
 
-def btn_edge_detected(pin):
+def btn_edge_detected(pin: int):
     if not GPIO.input(pin):
         print("Button down")
         shutdown_timer.start()
@@ -90,7 +91,5 @@ def btn_edge_detected(pin):
 
 if __name__ == "__main__":
     shutdown_timer = None
-    mode_manager = None
-    all_rgb_leds = []
-    init()
-    start()
+    mode_manager, all_rgb_leds = init()
+    start(mode_manager, all_rgb_leds)
