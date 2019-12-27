@@ -58,12 +58,17 @@ class ModeManager:
         self.interrupted = True
         self.shutting_down = True
 
-    def pulse(self, colour: Colour = Colour.WHITE):
+    def pulse(self, colour: Colour = Colour.WHITE, start_colour: Colour = Colour.BLACK,
+              increment_interval: int = 0, increment_value: int = 1):
         for led in self.all_rgb_leds:
-            led.set_colour(Colour.BLACK)
+            led.set_colour(start_colour)
 
-        RgbLED.multi_led_phase_colour_change(self.all_rgb_leds, colour, self, interval=0)
-        RgbLED.multi_led_phase_colour_change(self.all_rgb_leds, Colour.BLACK, self, interval=0)
+        RgbLED.multi_led_phase_colour_change(
+            self.all_rgb_leds, colour, self, interval=increment_interval, increment=increment_value
+        )
+        RgbLED.multi_led_phase_colour_change(
+            self.all_rgb_leds, start_colour, self, interval=increment_interval, increment=increment_value
+        )
 
 
 class SoftShutdown(Mode):
@@ -83,7 +88,7 @@ class SoftShutdown(Mode):
 class ModeA(Mode):
     def run(self, manager):
         while not manager.interrupted:
-            for index, colour in enumerate(self.colour_cycle):
+            for colour in self.colour_cycle:
                 for led in self.leds:
                     led.set_colour(colour)
 
@@ -96,10 +101,29 @@ class ModeA(Mode):
 class ModeB(Mode):
     def run(self, manager):
         while not manager.interrupted:
-            for index, colour in enumerate(self.colour_cycle):
+            for colour in self.colour_cycle:
                 RgbLED.multi_led_phase_colour_change(self.leds, colour, manager)
 
                 for _ in range(0, int(MODE_B_INTERVAL / POLL_FOR_INTERRUPT_INTERVAL)):
                     if manager.interrupted:
                         return
                     time.sleep(POLL_FOR_INTERRUPT_INTERVAL)
+
+
+class ModeC(Mode):
+    def run(self, manager):
+        while not manager.interrupted:
+            RgbLED.multi_led_phase_colour_change(
+                self.leds, Colour.RED, manager, interval=0.01, increment=10
+            )
+            RgbLED.multi_led_phase_colour_change(
+                self.leds, Colour.DARK_RED, manager, interval=0.01, increment=13
+            )
+            RgbLED.multi_led_phase_colour_change(
+                self.leds, Colour.RED, manager, interval=0.01, increment=13
+            )
+            RgbLED.multi_led_phase_colour_change(
+                self.leds, Colour.DARK_RED_2, manager, interval=0.01, increment=7
+            )
+
+            time.sleep(0.15)

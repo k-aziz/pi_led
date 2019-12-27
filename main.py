@@ -4,7 +4,7 @@ import typing as t
 import RPi.GPIO as GPIO
 
 from led import Colour, RgbLED
-from mode import ModeManager, ModeA, ModeB, SoftShutdown
+from mode import ModeManager, ModeA, ModeB, SoftShutdown, ModeC
 from timer import MyTimer
 
 BUTTON_PIN = 5
@@ -42,9 +42,10 @@ def init():
 
     mode_a = ModeA(all_leds, colour_cycle=[Colour.RED, Colour.GREEN, Colour.WHITE, Colour.BLUE, Colour.ORANGE])
     mode_b = ModeB(all_leds, colour_cycle=[Colour.RED, Colour.GREEN, Colour.WHITE, Colour.BLUE, Colour.ORANGE])
+    mode_c = ModeC(all_leds, colour_cycle=[])
 
     shutdown_timer = MyTimer(3, soft_shutdown)
-    manager = ModeManager([mode_b, mode_a], all_rgb_leds=all_leds, shutdown_mode=SoftShutdown(all_leds))
+    manager = ModeManager([mode_c, mode_b, mode_a], all_rgb_leds=all_leds, shutdown_mode=SoftShutdown(all_leds))
 
     return manager, all_leds
 

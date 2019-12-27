@@ -22,6 +22,9 @@ class Colour(Enum):
     PURPLE = RGB(106, 0, 255)
     ORANGE = RGB(255, 45, 0)
 
+    DARK_RED = RGB(55, 0, 0)
+    DARK_RED_2 = RGB(20, 0, 0)
+
 
 class LED:
     def __init__(self, pin, colour_value):
@@ -39,13 +42,21 @@ class LED:
         # for common anode rgb the brightness must be inverted
         self.pwm.ChangeDutyCycle(100 - brightness)
 
-    def increment_brightness(self, new_brightness):
+    def increment_brightness(self, new_brightness, increment: int = 1):
         done = False
         if self.colour_value < new_brightness:
-            self.colour_value += 1
+            delta = (new_brightness - self.colour_value)
+            if delta < increment:
+                increment = delta
+
+            self.colour_value += increment
             self.set_brightness(self.colour_value)
         elif self.colour_value > new_brightness:
-            self.colour_value -= 1
+            delta = (self.colour_value - new_brightness)
+            if delta < increment:
+                increment = delta
+
+            self.colour_value -= increment
             self.set_brightness(self.colour_value)
         else:
             done = True
@@ -98,7 +109,7 @@ class RgbLED:
 
     @staticmethod
     def multi_led_phase_colour_change(all_rgb_leds: t.List['RgbLED'], new_colour: Colour, manager: 'ModeManager',
-                                      interval: float = 0.05) -> None:
+                                      interval: float = 0.05, increment: int = 1) -> None:
         all_red_done = False
         all_green_done = False
         all_blue_done = False
@@ -115,10 +126,18 @@ class RgbLED:
             for led in all_rgb_leds:
                 if manager.interrupted:
                     return
-                led_done_statuses[id(led)]['red_done'] = led.red.increment_brightness(new_colour.value.red)
-                led_done_statuses[id(led)]['green_done'] = led.green.increment_brightness(new_colour.value.green)
-                led_done_statuses[id(led)]['blue_done'] = led.blue.increment_brightness(new_colour.value.blue)
-
+                led_done_statuses[id(led)]['red_done'] = led.red.increment_brightness(
+                    new_colour.value.red,
+                    increment=increment
+                )
+                led_done_statuses[id(led)]['green_done'] = led.green.increment_brightness(
+                    new_colour.value.green,
+                    increment=increment
+                )
+                led_done_statuses[id(led)]['blue_done'] = led.blue.increment_brightness(
+                    new_colour.value.blue,
+                    increment=increment
+                )
                 all_red_done = all([led_done_statuses[led_id]['red_done'] for led_id in led_done_statuses])
                 all_green_done = all([led_done_statuses[led_id]['green_done'] for led_id in led_done_statuses])
                 all_blue_done = all([led_done_statuses[led_id]['blue_done'] for led_id in led_done_statuses])
