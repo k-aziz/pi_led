@@ -2,7 +2,7 @@ import time
 import typing as t
 
 from led import Colour, RgbLED
-from settings import MODE_B_INTERVAL, POLL_FOR_INTERRUPT_INTERVAL, MODE_A_INTERVAL
+from settings import MODE_B_INTERVAL, POLL_FOR_INTERRUPT_INTERVAL, MODE_A_TOTAL_TIME
 
 
 class Mode:
@@ -86,19 +86,27 @@ class SoftShutdown(Mode):
 
 
 class ModeA(Mode):
+    """
+    Cycles through given list of colours. Quick transition between colours. The total time
+    taken to complete a colour cycle is given by MODE_A_TOTAL_TIME in the settings, not including
+    time taken to transition between each colour.
+    """
     def run(self, manager):
         while not manager.interrupted:
             for colour in self.colour_cycle:
-                for led in self.leds:
-                    led.set_colour(colour)
+                RgbLED.multi_led_phase_colour_change(self.leds, colour, manager, interval=0.01, increment=5)
 
-                for _ in range(0, int(MODE_A_INTERVAL / POLL_FOR_INTERRUPT_INTERVAL)):
+                for _ in range(0, int((MODE_A_TOTAL_TIME / len(self.colour_cycle)) / POLL_FOR_INTERRUPT_INTERVAL)):
                     if manager.interrupted:
                         return
                     time.sleep(POLL_FOR_INTERRUPT_INTERVAL)
 
 
 class ModeB(Mode):
+    """
+    Cycles through given list of colours. Slow transition between colours. How long each colour
+    is held before transitioning to the next is defined by MODE_B_INTERVAL in the settings.
+    """
     def run(self, manager):
         while not manager.interrupted:
             for colour in self.colour_cycle:
@@ -111,6 +119,9 @@ class ModeB(Mode):
 
 
 class ModeC(Mode):
+    """
+    Simple Heartbeat mode. Red light pulses to imitate a heartbeat.
+    """
     def run(self, manager):
         while not manager.interrupted:
             RgbLED.multi_led_phase_colour_change(

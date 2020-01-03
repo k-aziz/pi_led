@@ -45,7 +45,7 @@ def init():
     mode_c = ModeC(all_leds, colour_cycle=[])
 
     shutdown_timer = MyTimer(3, soft_shutdown)
-    manager = ModeManager([mode_c, mode_b, mode_a], all_rgb_leds=all_leds, shutdown_mode=SoftShutdown(all_leds))
+    manager = ModeManager([mode_b, mode_c, mode_a], all_rgb_leds=all_leds, shutdown_mode=SoftShutdown(all_leds))
 
     return manager, all_leds
 
